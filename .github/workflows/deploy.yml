@@ -16,9 +16,8 @@ jobs:
       # Step 2: Generate .env file with secrets and variables
       - name: Generate .env file
         run: |
-          echo "SECRET_KEY=${{ secrets.CRAWL4AI_API_TOKEN }}" > .env
-          echo "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" > .env
-          echo "ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}" > .env
+          echo "CRAWL4AI_API_TOKEN=${{ secrets.CRAWL4AI_API_TOKEN }}" >> .env
+          echo "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" >> .env
 
       # Step 3: Set up SSH key
       - name: Install SSH Key
