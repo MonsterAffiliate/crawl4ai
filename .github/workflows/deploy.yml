@@ -18,6 +18,7 @@ jobs:
         run: |
           echo "CRAWL4AI_API_TOKEN=${{ secrets.CRAWL4AI_API_TOKEN }}" >> .env
           echo "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" >> .env
+          echo "OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }}" >> .env
 
       # Step 3: Set up SSH key
       - name: Install SSH Key
