@@ -9,7 +9,6 @@ services:
       - CRAWL4AI_API_TOKEN=${CRAWL4AI_API_TOKEN:-}
       - MAX_CONCRRENT_TASKS=${MAX_CONCRRENT_TASKS:-5}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
     volumes:
       - /dev/shm:/dev/shm
     networks:

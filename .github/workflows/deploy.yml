@@ -43,15 +43,6 @@ jobs:
             mkdir -p ~/crawl4ai
             cd ~/crawl4ai
 
-            # Initialize database and user
-            chmod +x init-db.sh
-            export DB_NAME=crawl4ai
-            export DB_USER=crawl4ai
-            export DB_PASSWORD=${{ secrets.crawl4ai_DB_PASSWORD }}
-            export SUPERUSER=superuser
-            export SUPERUSER_PASSWORD=${{ secrets.POSTGRES_SUPERUSER_PASSWORD }}
-            ./init-db.sh
-
             # Store deployment version
             echo "${{ github.sha }}" > deploy_version.txt
 
@@ -60,10 +51,10 @@ jobs:
             docker compose up -d --build --force-recreate --remove-orphans
             
             # Wait for app to be ready via Traefik
-            timeout 30s bash -c "until curl -s -f https://crawl4ai.com/; do sleep 2; echo 'Checking...'; done" || {
+            timeout 30s bash -c "until curl -s -f http://localhost:11235/health; do sleep 2; echo 'Checking...'; done" || {
               echo "Deployment failed, rolling back..."
               docker compose down
-              docker compose logs crawl4ai-web
+              docker compose logs crawl4ai
               exit 1
             }
 
