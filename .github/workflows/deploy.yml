@@ -1,0 +1,73 @@
+name: Deploy Crawl4AI
+
+on:
+  push:
+    branches:
+      - master  # Trigger on push to master branch
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      # Step 1: Checkout the repository code
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Step 2: Generate .env file with secrets and variables
+      - name: Generate .env file
+        run: |
+          echo "SECRET_KEY=${{ secrets.CRAWL4AI_API_TOKEN }}" > .env
+          echo "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" > .env
+          echo "ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}" > .env
+
+      # Step 3: Set up SSH key
+      - name: Install SSH Key
+        uses: shimataro/ssh-key-action@v2
+        with:
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          known_hosts: unnecessary
+
+      # Step 4: Add Known Hosts
+      - name: Add Known Hosts
+        run: |
+          ssh-keyscan -H ${{ vars.SERVER_DOMAIN }} >> ~/.ssh/known_hosts
+
+      # Step 5: Deploy with Docker Compose
+      - name: Deploy with Docker Compose
+        run: |
+          # Transfer files (including .env) to server
+          rsync -avz --progress --delete --exclude '.git' -e "ssh" ./ ${{ vars.SERVER_USER }}@${{ vars.SERVER_DOMAIN }}:~/crawl4ai/
+
+          # SSH to deploy with minimal downtime
+          ssh ${{ vars.SERVER_USER }}@${{ vars.SERVER_DOMAIN }} << 'EOF'
+            mkdir -p ~/crawl4ai
+            cd ~/crawl4ai
+
+            # Initialize database and user
+            chmod +x init-db.sh
+            export DB_NAME=crawl4ai
+            export DB_USER=crawl4ai
+            export DB_PASSWORD=${{ secrets.crawl4ai_DB_PASSWORD }}
+            export SUPERUSER=superuser
+            export SUPERUSER_PASSWORD=${{ secrets.POSTGRES_SUPERUSER_PASSWORD }}
+            ./init-db.sh
+
+            # Store deployment version
+            echo "${{ github.sha }}" > deploy_version.txt
+
+            # Pull and build images
+            docker compose pull
+            docker compose up -d --build --force-recreate --remove-orphans
+            
+            # Wait for app to be ready via Traefik
+            timeout 30s bash -c "until curl -s -f https://crawl4ai.com/; do sleep 2; echo 'Checking...'; done" || {
+              echo "Deployment failed, rolling back..."
+              docker compose down
+              docker compose logs crawl4ai-web
+              exit 1
+            }
+
+            # Cleanup
+            docker image prune -f
+            docker container prune -f
+          EOF
