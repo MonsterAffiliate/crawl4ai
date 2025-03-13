@@ -1,6 +1,6 @@
 services:
   crawl4ai:
-    image: unclecode/crawl4ai:all
+    image: unclecode/crawl4ai
     container_name: crawl4ai
     restart: unless-stopped
     ports:
